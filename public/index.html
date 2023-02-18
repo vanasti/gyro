@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="qr"></div>
+    <p id ='socketId'>Waiting for connection</p>
+    <div class ="cursor"></div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <script>
+        let speedX = 0;
+        let speedY = 0;
+        let posX, posY;
+        let gamma = 0;
+        let alpha = 0; 
+        let beta = 0;
+
+        const $ball = document.querySelector('.cursor');
+
+        const init = () => {
+           
+            const $url = document.querySelector('#socketId');
+            const $qr = document.querySelector('#qr');
+            posX = window.innerWidth/2;
+            posY = window.innerHeight/2;
+            socket = io.connect();
+            socket.on(`connect`, () => {
+                let url = `${new URL(`/controller.html?id=${socket.id}`,window.location)}`;
+                $url.textContent = url;
+                console.log(`Connected: ${socket.id}`);
+                $ball.style.left =`${posX}px`;
+                $ball.style.top = `${posY}px`;
+                const qr = qrCode(url);
+                $qr.innerHTML = qr.createImgTag(4);
+
+                socket.on('gyroUpdate',(data)=> {
+                    gamma = +data.gamma;
+                    beta = +data.beta;
+                    alpha = +data.alpha;
+                })
+                
+               
+            });
+           
+            loop();
+        }
+
+        const qrCode = url => {
+            const typeNumber = 4;
+            const errorCorrectionlevel = "L";
+            const qr = qrcode(typeNumber, errorCorrectionlevel);
+            qr.addData(url);
+            qr.make();
+            return qr;
+        }
+        const loop = () => {
+            updatePosition();
+            updateCoordinates();
+            drawNewBall();
+            requestAnimationFrame(loop);
+        }
+
+        const updatePosition = () => {
+            speedX =speedX * 0.2 + (gamma*5);
+            speedY =speedY * 0.2 + (beta*5);
+        }
+
+        const updateCoordinates = () => {
+            posX += speedX;
+            posY += speedY;
+            console.log(window.innerWidth)
+            if(posX >= window.innerWidth){
+                console.log('check');
+                posX = window.innerWidth - 20;
+                speedX = 0;
+            }
+            if(posX <= 0){
+                posX = 0;
+                speedX = 0;
+            }
+
+            if(posY >= window.innerHeight){
+                posY = window.innerHeight;
+                speedY = 0;
+            }
+
+            if(posY <= 0){
+                posY = 0;
+                speedY = 0;
+            } 
+            console.log(posX)
+        }
+
+        const drawNewBall = () => {
+            $ball.style.left = `${posX}px`
+            $ball.style.top = `${posY}px` 
+        }
+
+        init();
+    </script>
+</body>
+</html>

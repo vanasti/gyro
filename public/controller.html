@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket, targetSocketId;
+        const init = () => {
+            targetSocketId = getUrlParameter(`id`);
+            if (!targetSocketId) {
+                alert(`Missing target ID in querystring`);
+            return;
+            }
+
+            socket =  io.connect();
+            socket.on('connect', () => {
+                window.addEventListener('deviceorientation', handleOrientation);
+            })
+        };
+
+        const handleOrientation = e => {
+            socket.emit('gyroUpdate',targetSocketId, {
+                gamma: (e.gamma / 100).toFixed(2),
+                beta: (e.beta / 100).toFixed(2),
+                alpha: (e.alpha / 100).toFixed(2)
+            });
+        }
+
+        const getUrlParameter = name => {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            console.log(name);
+            const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            console.log(regex);
+            const results = regex.exec(location.search);
+            console.log(results);
+            return results === null ? false : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        init();
+    </script>
+</body>
+</html>
